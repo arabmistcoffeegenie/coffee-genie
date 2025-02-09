@@ -9,7 +9,7 @@ const app = express();
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Serve static files (HTML, CSS, JS)
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Salary mapping for roles
@@ -18,7 +18,7 @@ const salaryMap = {
     'team-member': '£12.50 per hour',
     'manager': '£43,000 per year',
     'recruiter': '£13.00 per hour',
-    'barista': '£12.50 per hour'
+    'barista': '£12.50 per hour',
 };
 
 // Endpoint to handle job application submissions
@@ -112,8 +112,8 @@ app.post('/submit-dbs-form', (req, res) => {
     }
 });
 
-// Start the server on port 6050
-const PORT = process.env.PORT || 6050;
+// Start the server on the dynamic port provided by Vercel
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
