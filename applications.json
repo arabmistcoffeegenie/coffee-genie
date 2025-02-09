@@ -112,5 +112,30 @@
     ],
     "shiftPreference": "Evening",
     "cv": {}
+  },
+  {
+    "name": "SUFIYAN AHAMED",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "07383883934",
+    "position": "barista",
+    "employmentType": "Part-Time",
+    "availability": [
+      "Monday",
+      "Wednesday"
+    ],
+    "shiftPreference": "Evening",
+    "cv": {}
+  },
+  {
+    "name": "SUFIYAN AHAMED",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "07383883934",
+    "position": "recruiter",
+    "employmentType": "Full-Time",
+    "availability": [
+      "Monday"
+    ],
+    "shiftPreference": "Morning",
+    "cv": {}
   }
 ]

@@ -23,23 +23,23 @@ const salaryMap = {
 
 // Endpoint to handle job application submissions
 app.post('/submit-application', async (req, res) => {
-    const applicationData = req.body;
-
-    // Save application data to 'applications.json'
-    const filePath = path.join(__dirname, 'applications.json');
-    let existingApplications = [];
-    if (fs.existsSync(filePath)) {
-        const fileData = fs.readFileSync(filePath, 'utf-8');
-        existingApplications = JSON.parse(fileData);
-    }
-    existingApplications.push(applicationData);
-    fs.writeFileSync(filePath, JSON.stringify(existingApplications, null, 2));
-
-    // Get salary for the selected position
-    const salary = salaryMap[applicationData.position] || 'N/A';
-
-    // Send confirmation email
     try {
+        const applicationData = req.body;
+
+        // Save application data to 'applications.json'
+        const filePath = path.join(__dirname, 'applications.json');
+        let existingApplications = [];
+        if (fs.existsSync(filePath)) {
+            const fileData = fs.readFileSync(filePath, 'utf-8');
+            existingApplications = JSON.parse(fileData);
+        }
+        existingApplications.push(applicationData);
+        fs.writeFileSync(filePath, JSON.stringify(existingApplications, null, 2));
+
+        // Get salary for the selected position
+        const salary = salaryMap[applicationData.position] || 'N/A';
+
+        // Send confirmation email
         const transporter = nodemailer.createTransport({
             service: 'Gmail',
             auth: {
@@ -81,33 +81,39 @@ The Coffee Genie Recruitment Team`,
         };
 
         await transporter.sendMail(mailOptions);
+
         res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Error in /submit-application:', error);
         res.status(500).json({ message: 'Application saved, but email could not be sent.' });
     }
 });
 
-// **NEW** Endpoint to handle DBS form submissions
+// Endpoint to handle DBS form submissions
 app.post('/submit-dbs-form', (req, res) => {
-    const dbsData = req.body;
+    try {
+        const dbsData = req.body;
 
-    // Save DBS form data to 'dbs_submissions.json'
-    const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
-    let existingDBSSubmissions = [];
-    if (fs.existsSync(dbsFilePath)) {
-        const fileData = fs.readFileSync(dbsFilePath, 'utf-8');
-        existingDBSSubmissions = JSON.parse(fileData);
+        // Save DBS form data to 'dbs_submissions.json'
+        const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
+        let existingDBSSubmissions = [];
+        if (fs.existsSync(dbsFilePath)) {
+            const fileData = fs.readFileSync(dbsFilePath, 'utf-8');
+            existingDBSSubmissions = JSON.parse(fileData);
+        }
+        existingDBSSubmissions.push(dbsData);
+        fs.writeFileSync(dbsFilePath, JSON.stringify(existingDBSSubmissions, null, 2));
+
+        console.log('DBS form submitted successfully:', dbsData);
+        res.json({ message: 'DBS form submitted successfully!' });
+    } catch (error) {
+        console.error('Error in /submit-dbs-form:', error);
+        res.status(500).json({ message: 'Error submitting DBS form.' });
     }
-    existingDBSSubmissions.push(dbsData);
-    fs.writeFileSync(dbsFilePath, JSON.stringify(existingDBSSubmissions, null, 2));
-
-    // Respond with a success message
-    res.json({ message: 'DBS form submitted successfully!' });
 });
 
 // Start the server on port 6050
-const PORT = 6050;
+const PORT = process.env.PORT || 6050;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
