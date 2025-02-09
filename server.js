@@ -1,16 +1,32 @@
 const express = require('express');
-const fs = require('fs');
+const AWS = require('aws-sdk');
+const multer = require('multer');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
+
+// AWS S3 Configuration
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+});
+
+const BUCKET_NAME = 'coffee-genie-uploads';
 
 // Middleware to parse JSON requests
 app.use(express.json());
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Route to serve index.html on the base URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Salary mapping for roles
 const salaryMap = {
@@ -21,20 +37,28 @@ const salaryMap = {
     'barista': '£12.50 per hour',
 };
 
-// Endpoint to handle job application submissions
-app.post('/submit-application', async (req, res) => {
+// Endpoint to handle job application submissions and file uploads
+app.post('/submit-application', upload.single('cv'), async (req, res) => {
     try {
         const applicationData = req.body;
 
-        // Save application data to 'applications.json'
-        const filePath = path.join(__dirname, 'applications.json');
-        let existingApplications = [];
-        if (fs.existsSync(filePath)) {
-            const fileData = fs.readFileSync(filePath, 'utf-8');
-            existingApplications = JSON.parse(fileData);
+        // Upload file to S3
+        if (req.file) {
+            const fileContent = req.file.buffer;
+            const fileName = `applications/${Date.now()}_${req.file.originalname}`;
+
+            const uploadParams = {
+                Bucket: BUCKET_NAME,
+                Key: fileName,
+                Body: fileContent,
+                ContentType: req.file.mimetype,
+            };
+
+            await s3.upload(uploadParams).promise();
+            applicationData.cvFileName = fileName;  // Save file name for reference
         }
-        existingApplications.push(applicationData);
-        fs.writeFileSync(filePath, JSON.stringify(existingApplications, null, 2));
+
+        console.log('Application data:', applicationData);
 
         // Get salary for the selected position
         const salary = salaryMap[applicationData.position] || 'N/A';
@@ -58,7 +82,7 @@ Congratulations! You have been selected for the role of ${applicationData.positi
 
 Salary: ${salary}
 Position Type: ${applicationData.employmentType}
-Availability: ${applicationData.availability.join(', ')}
+Availability: ${applicationData.availability ? applicationData.availability.join(', ') : 'N/A'}
 Shift Preference: ${applicationData.shiftPreference}
 
 ---
@@ -82,10 +106,10 @@ The Coffee Genie Recruitment Team`,
 
         await transporter.sendMail(mailOptions);
 
-        res.json({ message: 'Application saved and email sent successfully!' });
+        res.json({ message: 'Application and file uploaded successfully!' });
     } catch (error) {
         console.error('Error in /submit-application:', error);
-        res.status(500).json({ message: 'Application saved, but email could not be sent.' });
+        res.status(500).json({ message: 'Error submitting application.' });
     }
 });
 
@@ -94,17 +118,9 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // Save DBS form data to 'dbs_submissions.json'
-        const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
-        let existingDBSSubmissions = [];
-        if (fs.existsSync(dbsFilePath)) {
-            const fileData = fs.readFileSync(dbsFilePath, 'utf-8');
-            existingDBSSubmissions = JSON.parse(fileData);
-        }
-        existingDBSSubmissions.push(dbsData);
-        fs.writeFileSync(dbsFilePath, JSON.stringify(existingDBSSubmissions, null, 2));
-
+        // Log the DBS form data
         console.log('DBS form submitted successfully:', dbsData);
+
         res.json({ message: 'DBS form submitted successfully!' });
     } catch (error) {
         console.error('Error in /submit-dbs-form:', error);
