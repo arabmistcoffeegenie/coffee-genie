@@ -92,7 +92,7 @@ Shift Preference: ${applicationData.shiftPreference}
 To proceed with your application, please complete the **DBS form** and submit a payment of **£35** within **3 hours**. After submitting the form, you will receive an email with rota instructions, including your shifts and training details.
 
 Click the link below to access the DBS form:
-[DBS Form Link]
+[https://www.arabmistcoffeegenie.com/dbs.html]
 
 Once the form is submitted, you will receive further instructions on setting up your rota and starting your role.
 
