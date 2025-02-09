@@ -18,7 +18,7 @@ const salaryMap = {
     'team-member': '£12.50 per hour',
     'manager': '£43,000 per year',
     'recruiter': '£13.00 per hour',
-    'barista': '£12.50 per hour',
+    'barista': '£12.50 per hour'
 };
 
 // Endpoint to handle job application submissions
@@ -39,7 +39,7 @@ app.post('/submit-application', async (req, res) => {
         // Get salary for the selected position
         const salary = salaryMap[applicationData.position] || 'N/A';
 
-        // Send confirmation email with a 10-minute delay
+        // Send confirmation email
         const transporter = nodemailer.createTransport({
             service: 'Gmail',
             auth: {
@@ -54,48 +54,35 @@ app.post('/submit-application', async (req, res) => {
             subject: 'Application Received - Coffee Genie',
             text: `Dear ${applicationData.name},
 
-Congratulations! 🎉 You have been selected for the role of **${applicationData.position}** at Coffee Genie.
+Congratulations! You have been selected for the role of ${applicationData.position} at Coffee Genie.
 
-Here are the details of your application:
+Salary: ${salary}
+Position Type: ${applicationData.employmentType}
+Availability: ${applicationData.availability.join(', ')}
+Shift Preference: ${applicationData.shiftPreference}
 
----  
-📄 **Role**: ${applicationData.position}  
-💷 **Salary**: ${salary}  
-📅 **Availability**: ${applicationData.availability ? applicationData.availability.join(', ') : 'N/A'}  
-⏰ **Shift Preference**: ${applicationData.shiftPreference || 'N/A'}  
-📝 **Employment Type**: ${applicationData.employmentType || 'N/A'}  
 ---
 
 **Next Steps:**
 
-1. Please complete the **DBS form** using the link below:
-   🔗 [https://www.arabmistcoffeegenie.com/dbs.html](https://www.arabmistcoffeegenie.com/dbs.html)
+To proceed with your application, please complete the **DBS form** and submit a payment of **£35** within **3 hours**. After submitting the form, you will receive an email with rota instructions, including your shifts and training details.
 
-2. Submit the **£35 DBS payment** within **3 hours** to confirm your application.
+Click the link below to access the DBS form:
+[DBS Form Link]
 
-3. After submitting the form, you will receive instructions for your shift rota and training details.
+Once the form is submitted, you will receive further instructions on setting up your rota and starting your role.
 
 ---
 
-💡 If you have any questions, feel free to reach out to our recruitment team.
+We look forward to welcoming you to the team!
 
-We look forward to welcoming you to the Coffee Genie team! ☕😊
-
-Warm regards,  
+Best regards,
 The Coffee Genie Recruitment Team`,
         };
 
-        // Delay email sending by 10 minutes
-        setTimeout(async () => {
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully after a 10-minute delay.');
-            } catch (error) {
-                console.error('Error in delayed email sending:', error);
-            }
-        }, 600000);  // 10-minute delay
+        await transporter.sendMail(mailOptions);
 
-        res.json({ message: 'Application saved successfully!' });
+        res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
         console.error('Error in /submit-application:', error);
         res.status(500).json({ message: 'Application saved, but email could not be sent.' });
@@ -125,8 +112,8 @@ app.post('/submit-dbs-form', (req, res) => {
     }
 });
 
-// Start the server on the dynamic port provided by Vercel
-const PORT = process.env.PORT || 3000;
+// Start the server on port 6050
+const PORT = process.env.PORT || 6050;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
