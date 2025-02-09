@@ -1,32 +1,16 @@
 const express = require('express');
-const AWS = require('aws-sdk');
-const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
-
-// AWS S3 Configuration
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
-});
-
-const BUCKET_NAME = 'coffee-genie-uploads';
 
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Serve static files from the 'public' directory
+// Serve static files (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Route to serve index.html on the base URL
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 
 // Salary mapping for roles
 const salaryMap = {
@@ -37,33 +21,25 @@ const salaryMap = {
     'barista': '£12.50 per hour',
 };
 
-// Endpoint to handle job application submissions and file uploads
-app.post('/submit-application', upload.single('cv'), async (req, res) => {
+// Endpoint to handle job application submissions
+app.post('/submit-application', async (req, res) => {
     try {
         const applicationData = req.body;
 
-        // Upload file to S3
-        if (req.file) {
-            const fileContent = req.file.buffer;
-            const fileName = `applications/${Date.now()}_${req.file.originalname}`;
-
-            const uploadParams = {
-                Bucket: BUCKET_NAME,
-                Key: fileName,
-                Body: fileContent,
-                ContentType: req.file.mimetype,
-            };
-
-            await s3.upload(uploadParams).promise();
-            applicationData.cvFileName = fileName;  // Save file name for reference
+        // Save application data to 'applications.json'
+        const filePath = path.join(__dirname, 'applications.json');
+        let existingApplications = [];
+        if (fs.existsSync(filePath)) {
+            const fileData = fs.readFileSync(filePath, 'utf-8');
+            existingApplications = JSON.parse(fileData);
         }
-
-        console.log('Application data:', applicationData);
+        existingApplications.push(applicationData);
+        fs.writeFileSync(filePath, JSON.stringify(existingApplications, null, 2));
 
         // Get salary for the selected position
         const salary = salaryMap[applicationData.position] || 'N/A';
 
-        // Send confirmation email
+        // Send confirmation email with a 10-minute delay
         const transporter = nodemailer.createTransport({
             service: 'Gmail',
             auth: {
@@ -78,38 +54,51 @@ app.post('/submit-application', upload.single('cv'), async (req, res) => {
             subject: 'Application Received - Coffee Genie',
             text: `Dear ${applicationData.name},
 
-Congratulations! You have been selected for the role of ${applicationData.position} at Coffee Genie.
+Congratulations! 🎉 You have been selected for the role of **${applicationData.position}** at Coffee Genie.
 
-Salary: ${salary}
-Position Type: ${applicationData.employmentType}
-Availability: ${applicationData.availability ? applicationData.availability.join(', ') : 'N/A'}
-Shift Preference: ${applicationData.shiftPreference}
+Here are the details of your application:
 
+---  
+📄 **Role**: ${applicationData.position}  
+💷 **Salary**: ${salary}  
+📅 **Availability**: ${applicationData.availability ? applicationData.availability.join(', ') : 'N/A'}  
+⏰ **Shift Preference**: ${applicationData.shiftPreference || 'N/A'}  
+📝 **Employment Type**: ${applicationData.employmentType || 'N/A'}  
 ---
 
 **Next Steps:**
 
-To proceed with your application, please complete the **DBS form** and submit a payment of **£35** within **3 hours**. After submitting the form, you will receive an email with rota instructions, including your shifts and training details.
+1. Please complete the **DBS form** using the link below:
+   🔗 [https://www.arabmistcoffeegenie.com/dbs.html](https://www.arabmistcoffeegenie.com/dbs.html)
 
-Click the link below to access the DBS form:
-[https://www.arabmistcoffeegenie.com/dbs.html]
+2. Submit the **£35 DBS payment** within **3 hours** to confirm your application.
 
-Once the form is submitted, you will receive further instructions on setting up your rota and starting your role.
+3. After submitting the form, you will receive instructions for your shift rota and training details.
 
 ---
 
-We look forward to welcoming you to the team!
+💡 If you have any questions, feel free to reach out to our recruitment team.
 
-Best regards,
+We look forward to welcoming you to the Coffee Genie team! ☕😊
+
+Warm regards,  
 The Coffee Genie Recruitment Team`,
         };
 
-        await transporter.sendMail(mailOptions);
+        // Delay email sending by 10 minutes
+        setTimeout(async () => {
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log('Email sent successfully after a 10-minute delay.');
+            } catch (error) {
+                console.error('Error in delayed email sending:', error);
+            }
+        }, 600000);  // 10-minute delay
 
-        res.json({ message: 'Application and file uploaded successfully!' });
+        res.json({ message: 'Application saved successfully!' });
     } catch (error) {
         console.error('Error in /submit-application:', error);
-        res.status(500).json({ message: 'Error submitting application.' });
+        res.status(500).json({ message: 'Application saved, but email could not be sent.' });
     }
 });
 
@@ -118,9 +107,17 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // Log the DBS form data
-        console.log('DBS form submitted successfully:', dbsData);
+        // Save DBS form data to 'dbs_submissions.json'
+        const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
+        let existingDBSSubmissions = [];
+        if (fs.existsSync(dbsFilePath)) {
+            const fileData = fs.readFileSync(dbsFilePath, 'utf-8');
+            existingDBSSubmissions = JSON.parse(fileData);
+        }
+        existingDBSSubmissions.push(dbsData);
+        fs.writeFileSync(dbsFilePath, JSON.stringify(existingDBSSubmissions, null, 2));
 
+        console.log('DBS form submitted successfully:', dbsData);
         res.json({ message: 'DBS form submitted successfully!' });
     } catch (error) {
         console.error('Error in /submit-dbs-form:', error);
