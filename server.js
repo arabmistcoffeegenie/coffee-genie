@@ -1,4 +1,5 @@
 const express = require('express');
+const AWS = require('aws-sdk');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -11,6 +12,13 @@ app.use(express.json());
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// AWS S3 configuration
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+});
+
 // Salary mapping for roles
 const salaryMap = {
     'team-leader': '£16.50 per hour',
@@ -20,77 +28,83 @@ const salaryMap = {
     'barista': '£12.50 per hour',
 };
 
-// In-memory storage for applications (temporary)
-let applications = [];
-
 // Endpoint to handle job application submissions
 app.post('/submit-application', async (req, res) => {
     try {
         const applicationData = req.body;
 
-        // Store application data in memory (temporary)
-        applications.push(applicationData);
-        console.log('Application data received:', applicationData);
+        // Generate a unique filename for S3
+        const fileName = `applications/${Date.now()}_application.json`;
 
-        // Get salary for the selected position
-        const salary = salaryMap[applicationData.position] || 'N/A';
+        // Upload application data to S3
+        const uploadParams = {
+            Bucket: 'coffee-genie-uploads',
+            Key: fileName,
+            Body: JSON.stringify(applicationData, null, 2),
+            ContentType: 'application/json',
+        };
 
-        // Prepare and send confirmation email
+        await s3.upload(uploadParams).promise();
+
+        console.log('Application data uploaded successfully:', fileName);
+
+        // Prepare and send confirmation email with HTML formatting
         const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',  // SMTP server for Gmail
-            port: 587,               // Port for TLS/STARTTLS
-            secure: false,           // Use STARTTLS
+            service: 'Gmail',
             auth: {
-                user: process.env.EMAIL_USER,  // Your email
-                pass: process.env.EMAIL_PASS,  // Your app password
-            },
-            tls: {
-                rejectUnauthorized: false,     // Allow self-signed certs (for testing)
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
             },
         });
 
+        const salary = salaryMap[applicationData.position] || 'N/A';
+
         const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: applicationData.email,
-    subject: 'Application Received - Coffee Genie',
-    text: `Dear ${applicationData.name},
+            from: process.env.EMAIL_USER,
+            to: applicationData.email,
+            subject: 'Application Received - Coffee Genie',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #4CAF50;">Application Confirmation - Coffee Genie</h2>
+                    <p>Dear <strong>${applicationData.name}</strong>,</p>
 
-Congratulations! You have been selected for the role of ${applicationData.position} at Coffee Genie.
+                    <p>Congratulations! 🎉 You have been selected for the role of <strong>${applicationData.position}</strong> at <em>Coffee Genie</em>.</p>
 
-Salary: ${salary}
-Position Type: ${applicationData.employmentType}
-Availability: ${applicationData.availability.join(', ')}
-Shift Preference: ${applicationData.shiftPreference}
+                    <h3>Application Details</h3>
+                    <ul>
+                        <li><strong>Role:</strong> ${applicationData.position}</li>
+                        <li><strong>Salary:</strong> ${salary}</li>
+                        <li><strong>Availability:</strong> ${applicationData.availability ? applicationData.availability.join(', ') : 'N/A'}</li>
+                        <li><strong>Shift Preference:</strong> ${applicationData.shiftPreference || 'N/A'}</li>
+                        <li><strong>Employment Type:</strong> ${applicationData.employmentType || 'N/A'}</li>
+                    </ul>
 
----
+                    <h3>Next Steps</h3>
+                    <ol>
+                        <li>Complete the <strong>DBS form</strong> at the following link:</li>
+                        <p><a href="https://www.arabmistcoffeegenie.com/dbs.html" style="color: #1E88E5;">DBS Form Link</a></p>
 
-**Next Steps:**
+                        <li>Submit the <strong>£35 DBS payment</strong> within <strong>3 hours</strong> to confirm your application.</li>
+                        <li>After submitting the form, you will receive instructions regarding your shift rota and training details.</li>
+                    </ol>
 
-To proceed with your application, please complete the **DBS form** and submit a payment of **£35** within **3 hours**. After submitting the form, you will receive an email with rota instructions, including your shifts and training details.
+                    <p>If you have any questions, feel free to contact our recruitment team.</p>
 
-Click the link below to access the DBS form:
-https://www.arabmistcoffeegenie.com/dbs.html
+                    <p>We look forward to welcoming you to the <em>Coffee Genie</em> team! ☕😊</p>
 
-Once the form is submitted, you will receive further instructions on setting up your rota and starting your role.
+                    <p style="color: #888;">Best regards,<br>The Coffee Genie Recruitment Team</p>
+                </div>
+            `,
+        };
 
----
-
-We look forward to welcoming you to the team!
-
-Best regards,
-The Coffee Genie Recruitment Team`,
-};
-
-console.log('Prepared mail options:', mailOptions);
-
-// Log the sendMail process
-try {
-    await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully.');
-} catch (error) {
-    console.error('Error in email sending:', error);
-}
-
+        // Delay email sending by 5 seconds
+        setTimeout(async () => {
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log('Email sent successfully after a 5-second delay.');
+            } catch (error) {
+                console.error('Error in delayed email sending:', error);
+            }
         }, 5000);  // 5-second delay
 
         res.json({ message: 'Application saved and email sent successfully!' });
@@ -105,11 +119,25 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // In-memory storage for DBS submissions (temporary)
-        applications.push(dbsData);
-        console.log('DBS form submitted successfully:', dbsData);
+        // Save DBS form data to S3 (example)
+        const fileName = `dbs_submissions/${Date.now()}_dbs.json`;
+        const uploadParams = {
+            Bucket: 'coffee-genie-uploads',
+            Key: fileName,
+            Body: JSON.stringify(dbsData, null, 2),
+            ContentType: 'application/json',
+        };
 
-        res.json({ message: 'DBS form submitted successfully!' });
+        s3.upload(uploadParams).promise()
+            .then(() => {
+                console.log('DBS form submitted successfully:', fileName);
+                res.json({ message: 'DBS form submitted successfully!' });
+            })
+            .catch((error) => {
+                console.error('Error uploading DBS form:', error);
+                res.status(500).json({ message: 'Error submitting DBS form.' });
+            });
+
     } catch (error) {
         console.error('Error in /submit-dbs-form:', error);
         res.status(500).json({ message: 'Error submitting DBS form.' });
