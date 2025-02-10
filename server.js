@@ -50,10 +50,10 @@ app.post('/submit-application', async (req, res) => {
         });
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: applicationData.email,
-            subject: 'Application Received - Coffee Genie',
-            text: `Dear ${applicationData.name},
+    from: process.env.EMAIL_USER,
+    to: applicationData.email,
+    subject: 'Application Received - Coffee Genie',
+    text: `Dear ${applicationData.name},
 
 Congratulations! You have been selected for the role of ${applicationData.position} at Coffee Genie.
 
@@ -79,17 +79,18 @@ We look forward to welcoming you to the team!
 
 Best regards,
 The Coffee Genie Recruitment Team`,
-        };
+};
 
-        // Send the email with a 5-second delay
-        setTimeout(async () => {
-            console.log('Attempting to send email...');
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully.');
-            } catch (error) {
-                console.error('Error in email sending:', error);
-            }
+console.log('Prepared mail options:', mailOptions);
+
+// Log the sendMail process
+try {
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully.');
+} catch (error) {
+    console.error('Error in email sending:', error);
+}
+
         }, 5000);  // 5-second delay
 
         res.json({ message: 'Application saved and email sent successfully!' });
