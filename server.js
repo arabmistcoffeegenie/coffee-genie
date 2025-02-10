@@ -45,7 +45,6 @@ app.post('/submit-application', async (req, res) => {
         };
 
         await s3.upload(uploadParams).promise();
-
         console.log('Application data uploaded successfully:', fileName);
 
         // Prepare and send confirmation email with HTML formatting
@@ -97,15 +96,9 @@ app.post('/submit-application', async (req, res) => {
             `,
         };
 
-        // Delay email sending by 5 seconds
-        setTimeout(async () => {
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully after a 5-second delay.');
-            } catch (error) {
-                console.error('Error in delayed email sending:', error);
-            }
-        }, 5000);  // 5-second delay
+        // Send the email immediately
+        await transporter.sendMail(mailOptions);
+        console.log('Email sent successfully.');
 
         res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
@@ -119,25 +112,18 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // Save DBS form data to S3 (example)
-        const fileName = `dbs_submissions/${Date.now()}_dbs.json`;
-        const uploadParams = {
-            Bucket: 'coffee-genie-uploads',
-            Key: fileName,
-            Body: JSON.stringify(dbsData, null, 2),
-            ContentType: 'application/json',
-        };
+        // Save DBS form data to 'dbs_submissions.json' (example)
+        const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
+        let existingDBSSubmissions = [];
+        if (fs.existsSync(dbsFilePath)) {
+            const fileData = fs.readFileSync(dbsFilePath, 'utf-8');
+            existingDBSSubmissions = JSON.parse(fileData);
+        }
+        existingDBSSubmissions.push(dbsData);
+        fs.writeFileSync(dbsFilePath, JSON.stringify(existingDBSSubmissions, null, 2));
 
-        s3.upload(uploadParams).promise()
-            .then(() => {
-                console.log('DBS form submitted successfully:', fileName);
-                res.json({ message: 'DBS form submitted successfully!' });
-            })
-            .catch((error) => {
-                console.error('Error uploading DBS form:', error);
-                res.status(500).json({ message: 'Error submitting DBS form.' });
-            });
-
+        console.log('DBS form submitted successfully:', dbsData);
+        res.json({ message: 'DBS form submitted successfully!' });
     } catch (error) {
         console.error('Error in /submit-dbs-form:', error);
         res.status(500).json({ message: 'Error submitting DBS form.' });
