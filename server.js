@@ -1,5 +1,5 @@
 const express = require('express');
-const AWS = require('aws-sdk');
+const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -9,15 +9,8 @@ const app = express();
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Serve static files
+// Serve static files (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
-
-// AWS S3 configuration
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
-});
 
 // Salary mapping for roles
 const salaryMap = {
@@ -33,22 +26,20 @@ app.post('/submit-application', async (req, res) => {
     try {
         const applicationData = req.body;
 
-        // Generate a unique filename for S3
-        const fileName = `applications/${Date.now()}_application.json`;
+        // Save application data to 'applications.json'
+        const filePath = path.join(__dirname, 'applications.json');
+        let existingApplications = [];
+        if (fs.existsSync(filePath)) {
+            const fileData = fs.readFileSync(filePath, 'utf-8');
+            existingApplications = JSON.parse(fileData);
+        }
+        existingApplications.push(applicationData);
+        fs.writeFileSync(filePath, JSON.stringify(existingApplications, null, 2));
 
-        // Upload application data to S3
-        const uploadParams = {
-            Bucket: 'coffee-genie-uploads',
-            Key: fileName,
-            Body: JSON.stringify(applicationData, null, 2),
-            ContentType: 'application/json',
-        };
+        // Get salary for the selected position
+        const salary = salaryMap[applicationData.position] || 'N/A';
 
-        await s3.upload(uploadParams).promise();
-
-        console.log('Application data uploaded successfully:', fileName);
-
-        // Prepare and send confirmation email with HTML formatting
+        // Send confirmation email
         const transporter = nodemailer.createTransport({
             service: 'Gmail',
             auth: {
@@ -57,60 +48,44 @@ app.post('/submit-application', async (req, res) => {
             },
         });
 
-        const salary = salaryMap[applicationData.position] || 'N/A';
-
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: applicationData.email,
             subject: 'Application Received - Coffee Genie',
-            html: `
-                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                    <h2 style="color: #4CAF50;">Application Confirmation - Coffee Genie</h2>
-                    <p>Dear <strong>${applicationData.name}</strong>,</p>
+            text: `Dear ${applicationData.name},
 
-                    <p>Congratulations! 🎉 You have been selected for the role of <strong>${applicationData.position}</strong> at <em>Coffee Genie</em>.</p>
+Congratulations! You have been selected for the role of ${applicationData.position} at Coffee Genie.
 
-                    <h3>Application Details</h3>
-                    <ul>
-                        <li><strong>Role:</strong> ${applicationData.position}</li>
-                        <li><strong>Salary:</strong> ${salary}</li>
-                        <li><strong>Availability:</strong> ${applicationData.availability ? applicationData.availability.join(', ') : 'N/A'}</li>
-                        <li><strong>Shift Preference:</strong> ${applicationData.shiftPreference || 'N/A'}</li>
-                        <li><strong>Employment Type:</strong> ${applicationData.employmentType || 'N/A'}</li>
-                    </ul>
+Salary: ${salary}
+Position Type: ${applicationData.employmentType}
+Availability: ${applicationData.availability.join(', ')}
+Shift Preference: ${applicationData.shiftPreference}
 
-                    <h3>Next Steps</h3>
-                    <ol>
-                        <li>Complete the <strong>DBS form</strong> at the following link:</li>
-                        <p><a href="https://www.arabmistcoffeegenie.com/dbs.html" style="color: #1E88E5;">DBS Form Link</a></p>
+---
 
-                        <li>Submit the <strong>£35 DBS payment</strong> within <strong>3 hours</strong> to confirm your application.</li>
-                        <li>After submitting the form, you will receive instructions regarding your shift rota and training details.</li>
-                    </ol>
+**Next Steps:**
 
-                    <p>If you have any questions, feel free to contact our recruitment team.</p>
+To proceed with your application, please complete the **DBS form** and submit a payment of **£35** within **3 hours**. After submitting the form, you will receive an email with rota instructions, including your shifts and training details.
 
-                    <p>We look forward to welcoming you to the <em>Coffee Genie</em> team! ☕😊</p>
+Click the link below to access the DBS form:
+[DBS Form Link]
 
-                    <p style="color: #888;">Best regards,<br>The Coffee Genie Recruitment Team</p>
-                </div>
-            `,
+Once the form is submitted, you will receive further instructions on setting up your rota and starting your role.
+
+---
+
+We look forward to welcoming you to the team!
+
+Best regards,
+The Coffee Genie Recruitment Team`,
         };
 
-        // Delay email sending by 5 seconds
-        setTimeout(async () => {
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully after a 5-second delay.');
-            } catch (error) {
-                console.error('Error in delayed email sending:', error);
-            }
-        }, 5000);  // 5-second delay (5,000 milliseconds)
+        await transporter.sendMail(mailOptions);
 
-        res.json({ message: 'Application saved and email will be sent shortly!' });
+        res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
         console.error('Error in /submit-application:', error);
-        res.status(500).json({ message: 'Error submitting application.' });
+        res.status(500).json({ message: 'Application saved, but email could not be sent.' });
     }
 });
 
@@ -119,7 +94,7 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // Save DBS form data to 'dbs_submissions.json' (example)
+        // Save DBS form data to 'dbs_submissions.json'
         const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
         let existingDBSSubmissions = [];
         if (fs.existsSync(dbsFilePath)) {
@@ -137,8 +112,8 @@ app.post('/submit-dbs-form', (req, res) => {
     }
 });
 
-// Start the server on the dynamic port provided by Vercel
-const PORT = process.env.PORT || 3000;
+// Start the server on port 6050
+const PORT = process.env.PORT || 6050;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
