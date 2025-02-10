@@ -20,9 +20,8 @@ const salaryMap = {
     'barista': '£12.50 per hour',
 };
 
-// In-memory storage for applications and DBS submissions (temporary)
+// In-memory storage for applications (temporary)
 let applications = [];
-let dbsSubmissions = [];
 
 // Endpoint to handle job application submissions
 app.post('/submit-application', async (req, res) => {
@@ -38,10 +37,15 @@ app.post('/submit-application', async (req, res) => {
 
         // Prepare and send confirmation email
         const transporter = nodemailer.createTransport({
-            service: 'Gmail',
+            host: 'smtp.gmail.com',  // SMTP server for Gmail
+            port: 587,               // Port for TLS/STARTTLS
+            secure: false,           // Use STARTTLS
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
+                user: process.env.EMAIL_USER,  // Your email
+                pass: process.env.EMAIL_PASS,  // Your app password
+            },
+            tls: {
+                rejectUnauthorized: false,     // Allow self-signed certs (for testing)
             },
         });
 
@@ -79,6 +83,7 @@ The Coffee Genie Recruitment Team`,
 
         // Send the email with a 5-second delay
         setTimeout(async () => {
+            console.log('Attempting to send email...');
             try {
                 await transporter.sendMail(mailOptions);
                 console.log('Email sent successfully.');
@@ -90,7 +95,7 @@ The Coffee Genie Recruitment Team`,
         res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
         console.error('Error in /submit-application:', error);
-        res.status(500).json({ message: 'Application saved, but email could not be sent.' });
+        res.status(500).json({ message: 'Error submitting application.' });
     }
 });
 
@@ -99,8 +104,8 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // Store DBS form data in memory (temporary)
-        dbsSubmissions.push(dbsData);
+        // In-memory storage for DBS submissions (temporary)
+        applications.push(dbsData);
         console.log('DBS form submitted successfully:', dbsData);
 
         res.json({ message: 'DBS form submitted successfully!' });
