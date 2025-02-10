@@ -1,5 +1,4 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -9,7 +8,7 @@ const app = express();
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Serve static files (HTML, CSS, JS)
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Salary mapping for roles
@@ -21,25 +20,23 @@ const salaryMap = {
     'barista': '£12.50 per hour',
 };
 
+// In-memory storage for applications and DBS submissions (temporary)
+let applications = [];
+let dbsSubmissions = [];
+
 // Endpoint to handle job application submissions
 app.post('/submit-application', async (req, res) => {
     try {
         const applicationData = req.body;
 
-        // Save application data to 'applications.json'
-        const filePath = path.join(__dirname, 'applications.json');
-        let existingApplications = [];
-        if (fs.existsSync(filePath)) {
-            const fileData = fs.readFileSync(filePath, 'utf-8');
-            existingApplications = JSON.parse(fileData);
-        }
-        existingApplications.push(applicationData);
-        fs.writeFileSync(filePath, JSON.stringify(existingApplications, null, 2));
+        // Store application data in memory (temporary)
+        applications.push(applicationData);
+        console.log('Application data received:', applicationData);
 
         // Get salary for the selected position
         const salary = salaryMap[applicationData.position] || 'N/A';
 
-        // Send confirmation email
+        // Prepare and send confirmation email
         const transporter = nodemailer.createTransport({
             service: 'Gmail',
             auth: {
@@ -68,7 +65,7 @@ Shift Preference: ${applicationData.shiftPreference}
 To proceed with your application, please complete the **DBS form** and submit a payment of **£35** within **3 hours**. After submitting the form, you will receive an email with rota instructions, including your shifts and training details.
 
 Click the link below to access the DBS form:
-[DBS Form Link]
+https://www.arabmistcoffeegenie.com/dbs.html
 
 Once the form is submitted, you will receive further instructions on setting up your rota and starting your role.
 
@@ -80,7 +77,15 @@ Best regards,
 The Coffee Genie Recruitment Team`,
         };
 
-        await transporter.sendMail(mailOptions);
+        // Send the email with a 5-second delay
+        setTimeout(async () => {
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log('Email sent successfully.');
+            } catch (error) {
+                console.error('Error in email sending:', error);
+            }
+        }, 5000);  // 5-second delay
 
         res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
@@ -94,17 +99,10 @@ app.post('/submit-dbs-form', (req, res) => {
     try {
         const dbsData = req.body;
 
-        // Save DBS form data to 'dbs_submissions.json'
-        const dbsFilePath = path.join(__dirname, 'dbs_submissions.json');
-        let existingDBSSubmissions = [];
-        if (fs.existsSync(dbsFilePath)) {
-            const fileData = fs.readFileSync(dbsFilePath, 'utf-8');
-            existingDBSSubmissions = JSON.parse(fileData);
-        }
-        existingDBSSubmissions.push(dbsData);
-        fs.writeFileSync(dbsFilePath, JSON.stringify(existingDBSSubmissions, null, 2));
-
+        // Store DBS form data in memory (temporary)
+        dbsSubmissions.push(dbsData);
         console.log('DBS form submitted successfully:', dbsData);
+
         res.json({ message: 'DBS form submitted successfully!' });
     } catch (error) {
         console.error('Error in /submit-dbs-form:', error);
@@ -112,8 +110,8 @@ app.post('/submit-dbs-form', (req, res) => {
     }
 });
 
-// Start the server on port 6050
-const PORT = process.env.PORT || 6050;
+// Start the server on the dynamic port provided by Vercel
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
