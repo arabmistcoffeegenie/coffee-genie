@@ -97,15 +97,16 @@ app.post('/submit-application', async (req, res) => {
             `,
         };
 
-        // Delay email sending by 10 minutes
+        // Delay email sending by 1 minutes
         setTimeout(async () => {
-            try {
-                await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully after a 10-minute delay.');
-            } catch (error) {
-                console.error('Error in delayed email sending:', error);
-            }
-        }, 600000);  // 10-minute delay
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Email sent successfully after a 1-minute delay.');
+    } catch (error) {
+        console.error('Error in delayed email sending:', error);
+    }
+}, 60000);  // 1-minute delay (60,000 milliseconds)
+
 
         res.json({ message: 'Application saved and email sent successfully!' });
     } catch (error) {
